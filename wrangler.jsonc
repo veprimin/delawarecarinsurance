@@ -1,0 +1,21 @@
+{
+  // This site is a fully static export (next.config.mjs: `output: 'export'`)
+  // — no API routes, server actions or middleware — so it deploys to
+  // Cloudflare as a Workers Static Assets project: `out/` is served directly,
+  // with no Worker script and no Next.js SSR runtime involved.
+  //
+  // Without this file present, `wrangler deploy` auto-detects "Next.js" and
+  // runs its OpenNext migration wizard, which expects a `.next/standalone`
+  // SSR build our static export doesn't produce — that mismatch is what
+  // broke the first deploy. Committing this file skips that wizard entirely.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "delawarecarinsurance",
+  "compatibility_date": "2026-08-31",
+  "assets": {
+    "directory": "./out",
+    "not_found_handling": "404-page"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
