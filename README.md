@@ -41,3 +41,33 @@ npm run dev
 ```
 npm run build
 ```
+
+`npm run build` produces a static export in `out/` (`output: 'export'` in
+`next.config.mjs`) — there is no Next.js server at runtime.
+
+## Hosting on Cloudflare Pages
+
+This site is a fully static export, so it deploys to Cloudflare Pages
+directly with no adapter or Workers runtime needed.
+
+**Dashboard (Git integration):**
+- Framework preset: `Next.js (Static HTML Export)`
+- Build command: `npm run build`
+- Build output directory: `out`
+
+**Wrangler CLI:**
+```
+npm run build
+npx wrangler pages deploy out
+```
+
+Response headers (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`,
+and long-lived caching for `/_next/static/*`) are set via `public/_headers`,
+Cloudflare Pages' static-headers file — `next.config.mjs`'s `headers()` isn't
+available under `output: 'export'` since there's no server to run it.
+
+If this site ever needs a real server feature (an API route, ISR, ad-hoc
+personalization), switch to
+[`@opennextjs/cloudflare`](https://opennext.js.org/cloudflare) and deploy to
+Cloudflare Workers instead of extending the static export — trying to bolt
+a server route onto `output: 'export'` will just fail the build.
