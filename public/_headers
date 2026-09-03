@@ -1,0 +1,12 @@
+# Cloudflare Pages static response headers.
+# next.config's headers()/redirects() aren't available under `output: 'export'`
+# (no Next.js server at runtime), so headers previously set via <meta> tags or
+# server config live here instead.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
