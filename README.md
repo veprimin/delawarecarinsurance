@@ -45,29 +45,55 @@ npm run build
 `npm run build` produces a static export in `out/` (`output: 'export'` in
 `next.config.mjs`) — there is no Next.js server at runtime.
 
-## Hosting on Cloudflare Pages
+## Hosting on Cloudflare
 
-This site is a fully static export, so it deploys to Cloudflare Pages
-directly with no adapter or Workers runtime needed.
+This site is a fully static export (`output: 'export'` in `next.config.mjs`),
+so it deploys as plain static files — no Next.js server, no edge runtime,
+no SSR adapter.
+
+### Cloudflare Workers (this project's actual setup — Workers Builds, git-connected)
+
+`wrangler.jsonc` is committed as a **Workers Static Assets** config: it has
+no `main` script, just `assets.directory: "./out"`, so `wrangler deploy`
+uploads the static export directly with no Worker code involved.
+
+**This file matters more than it looks.** Without it, `wrangler deploy`
+auto-detects "Next.js" and runs its OpenNext migration wizard, which expects
+a full SSR build (`.next/standalone/...`) — a build our static export never
+produces, and the wizard's build step fails immediately with an `ENOENT` on
+`pages-manifest.json`. Committing `wrangler.jsonc` skips that wizard
+entirely. If this file is ever deleted, the next deploy will regress into
+that same failure.
+
+```
+npm run build       # produces out/
+npm run deploy       # wrangler deploy — reads wrangler.jsonc, uploads out/
+```
+
+Local dev against the Worker: `npm run preview` (`wrangler dev`).
+
+### Cloudflare Pages (alternative)
+
+The same `out/` export also deploys to Pages directly, with no adapter:
 
 **Dashboard (Git integration):**
 - Framework preset: `Next.js (Static HTML Export)`
 - Build command: `npm run build`
 - Build output directory: `out`
 
-**Wrangler CLI:**
-```
-npm run build
-npx wrangler pages deploy out
-```
+**Wrangler CLI:** `npx wrangler pages deploy out`
 
-Response headers (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`,
-and long-lived caching for `/_next/static/*`) are set via `public/_headers`,
-Cloudflare Pages' static-headers file — `next.config.mjs`'s `headers()` isn't
-available under `output: 'export'` since there's no server to run it.
+### Response headers
 
-If this site ever needs a real server feature (an API route, ISR, ad-hoc
-personalization), switch to
-[`@opennextjs/cloudflare`](https://opennext.js.org/cloudflare) and deploy to
-Cloudflare Workers instead of extending the static export — trying to bolt
-a server route onto `output: 'export'` will just fail the build.
+`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, and long-lived
+caching for `/_next/static/*` are set via `public/_headers` — the static
+headers convention both Workers Static Assets and Pages support. Next's own
+`headers()` config isn't available under `output: 'export'`, since there's no
+server to run it.
+
+### If this site ever needs a real server feature
+
+An API route, ISR, or per-request personalization means switching to
+[`@opennextjs/cloudflare`](https://opennext.js.org/cloudflare) (drop
+`output: 'export'`, add a `main` Worker entry) rather than bolting a server
+route onto the static export — that combination doesn't build.
